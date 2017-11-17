@@ -1,3 +1,6 @@
+# Created by: Mei Chu
+# Last updated: November 16, 2017
+
 try:
     from PySide.QtGui import *
 except:
