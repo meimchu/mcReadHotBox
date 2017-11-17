@@ -55,9 +55,4 @@ class ActionLabel(QLabel):
 
 def main():
     panel = Panel()
-    mcNode = nuke.selectedNode()
-
-    if mcNode.Class() == "Read":
-        panel.exec_()
-    else:
-        print "Please select a Read node"
+    panel.exec_()
