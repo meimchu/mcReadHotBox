@@ -31,7 +31,7 @@ class Panel(QDialog):
         self.move(mouse_position - QPoint(100, 100))
 
         # Adding searchbox at the start
-        self.layout.addWidget(Search_Box(self), 0, 0)
+        self.layout.addWidget(SearchBox(self), 0, 0)
 
         # Bring in global variables as needed
         self.hotbox_count = hotbox_count
@@ -39,15 +39,15 @@ class Panel(QDialog):
         self.row_count = row_count
 
         # Setting variable for the selected node
-        mcRead = nuke.selectedNode()
+        mc_read = nuke.selectedNode()
 
         # Determining the amount of channels available at selected node
-        mcReadLength = len(mcRead.channels())
+        mc_read_length = len(mc_read.channels())
 
         # Counting the channels and adding it as a label widget
-        while self.hotbox_count < mcReadLength:
-            mcReadData = mcRead.channels()
-            hotbox_name = mcReadData[self.hotbox_count]
+        while self.hotbox_count < mc_read_length:
+            read_data = mc_read.channels()
+            hotbox_name = read_data[self.hotbox_count]
 
             rgba_list = ['rgba.red', 'rgba.green', 'rgba.blue', 'rgba.alpha']
 
@@ -62,7 +62,6 @@ class Panel(QDialog):
 
                 self.layout.addWidget(ActionLabel(self.hotbox_count, self), self.row_count, self.col_count)
 
-            print hotbox_name, self.row_count, self.col_count
             self.hotbox_count += 1
             self.row_count += 1
 
@@ -78,16 +77,15 @@ class ActionLabel(QLabel):
         self.setMouseTracking(True)
         self.setFixedWidth(150)
         self.setFixedHeight(30)
-        self.setStyleSheet("background:grey;color:white")
 
         # Bring in global variable as needed
         self.hotbox_count = hotbox_count
         self.panel = panel
 
         # Setting variables for the selected node
-        self.mcRead = nuke.selectedNode()
-        self.mcReadData = self.mcRead.channels()
-        self.hotbox_name = self.mcReadData[self.hotbox_count]
+        self.mc_read = nuke.selectedNode()
+        self.read_data = self.mc_read.channels()
+        self.hotbox_name = self.read_data[self.hotbox_count]
 
         # Setting text to the label
         self.setText(self.hotbox_name)
@@ -116,18 +114,24 @@ class ActionLabel(QLabel):
         self.default_colour()
 
     def mousePressEvent(self, event):
-        shuffle_node = nuke.nodes.Shuffle(label=self.hotbox_name, inputs=[self.mcRead])
+        shuffle_node = nuke.nodes.Shuffle(label=self.hotbox_name, inputs=[self.mc_read])
         shuffle_node['in'].setValue(self.hotbox_name)
 
-        viewer = nuke.activeViewer().node()['channels']
-        viewer.setValue(self.text())
+        try:
+            viewer = nuke.activeViewer().node()['channels']
+            viewer.setValue(self.text())
+
+        except Exception:
+            view_node = nuke.nodes.Viewer(inputs=[shuffle_node])
+            viewer = view_node['channels']
+            viewer.setValue(self.text())
 
         self.panel.close()
 
 
-class Search_Box(QLineEdit):
+class SearchBox(QLineEdit):
     def __init__(self, panel):
-        super(Search_Box, self).__init__()
+        super(SearchBox, self).__init__()
 
         self.panel = panel
 
