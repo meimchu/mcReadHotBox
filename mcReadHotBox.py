@@ -26,9 +26,9 @@ class Panel(QDialog):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_QuitOnClose)
 
-        # Set mouse tracking
-        mouse_position = QCursor.pos()
-        self.move(mouse_position - QPoint(100, 100))
+        # Move panel to beside current mouse position
+        self.mouse_position = QCursor.pos()
+        self.move(self.mouse_position)
 
         # Adding searchbox at the start
         self.layout.addWidget(SearchBox(self), 0, 0)
@@ -114,17 +114,19 @@ class ActionLabel(QLabel):
         self.default_colour()
 
     def mousePressEvent(self, event):
-        shuffle_node = nuke.nodes.Shuffle(label=self.hotbox_name, inputs=[self.mc_read])
-        shuffle_node['in'].setValue(self.hotbox_name)
+        modifiers = QApplication.keyboardModifiers()
 
-        try:
-            viewer = nuke.activeViewer().node()['channels']
-            viewer.setValue(self.text())
+        if modifiers == Qt.ShiftModifier:
+            shuffle_node = nuke.nodes.Shuffle(label=self.hotbox_name, inputs=[self.mc_read])
+            shuffle_node['in'].setValue(self.hotbox_name)
 
-        except Exception:
-            view_node = nuke.nodes.Viewer(inputs=[shuffle_node])
-            viewer = view_node['channels']
-            viewer.setValue(self.text())
+        else:
+            try:
+                viewer = nuke.activeViewer().node()['channels']
+                viewer.setValue(self.text())
+
+            except Exception:
+                pass
 
         self.panel.close()
 
