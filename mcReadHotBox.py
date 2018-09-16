@@ -145,6 +145,12 @@ class SearchBox(QLineEdit):
         self.setFixedHeight(30)
         self.textChanged.connect(self.text_changed)
 
+        try:
+            self.setPlaceholderText('Search...')
+
+        except Exception:
+            pass
+
     def text_changed(self):
         for index in range(self.panel.layout.count()):
             name = self.panel.layout.itemAt(index).widget().objectName()
