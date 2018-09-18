@@ -7,4 +7,5 @@ Put the two files into your user ``.nuke`` folder
 Press ``Z`` while selecting a node to see the hot boxes appear.
 
 - Clicking on a channel will change your Viewer to that channel.
-- Holding shift to click will create a Shuffle node to shuffle out that particular channel.
+- Holding ``Shift`` to click will create a Shuffle node to shuffle out that particular channel.
+- Holding ``Ctrl`` to click will create a Grade node to grade the particular channel.

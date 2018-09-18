@@ -1,5 +1,6 @@
 # Created by: Mei Chu
-# Last updated: September 15, 2018
+# Last updated: September 17, 2018
+# Version: 0.1.1
 
 import nuke
 
@@ -13,6 +14,23 @@ except Exception:
     from PySide2.QtCore import *
 
 
+def set_default_colour(hotbox, search_box):
+    if search_box.text() in hotbox.text():
+        hotbox.setStyleSheet('background:rgb(70, 70, 70);color:white')
+
+        if hotbox.text() == "rgba.red":
+            hotbox.setStyleSheet("background:red;color:white")
+
+        elif hotbox.text() == "rgba.green":
+            hotbox.setStyleSheet("background:green;color:white")
+
+        elif hotbox.text() == "rgba.blue":
+            hotbox.setStyleSheet("background:blue;color:white")
+
+    else:
+        hotbox.setStyleSheet('background:transparent;color:gray')
+
+
 class Panel(QDialog):
     def __init__(self, hotbox_count, col_count, row_count):
         super(Panel, self).__init__()
@@ -23,15 +41,16 @@ class Panel(QDialog):
         self.layout.setVerticalSpacing(5)
         self.resize(150, 30)
         self.setWindowFlags(Qt.FramelessWindowHint)
-        self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_QuitOnClose)
+        # self.setAttribute(Qt.WA_TranslucentBackground)
 
         # Move panel to beside current mouse position
         self.mouse_position = QCursor.pos()
         self.move(self.mouse_position)
 
         # Adding searchbox at the start
-        self.layout.addWidget(SearchBox(self), 0, 0)
+        self.search_box = SearchBox(self)
+        self.layout.addWidget(self.search_box, 0, 0)
 
         # Bring in global variables as needed
         self.hotbox_count = hotbox_count
@@ -52,15 +71,15 @@ class Panel(QDialog):
             rgba_list = ['rgba.red', 'rgba.green', 'rgba.blue', 'rgba.alpha']
 
             if hotbox_name in rgba_list:
-                self.layout.addWidget(ActionLabel(self.hotbox_count, self), self.row_count + 1, 0)
+                self.layout.addWidget(ActionLabel(self.hotbox_count, self, self.search_box), self.row_count, 0)
 
             else:
                 # Every time 6 hot boxes appear, move to the next column
-                if (self.hotbox_count + 1) % 5 == 0:
+                if (self.hotbox_count + 1) % 10 == 0:
                     self.col_count += 1
                     self.row_count = 0
 
-                self.layout.addWidget(ActionLabel(self.hotbox_count, self), self.row_count, self.col_count)
+                self.layout.addWidget(ActionLabel(self.hotbox_count, self, self.search_box), self.row_count, self.col_count)
 
             self.hotbox_count += 1
             self.row_count += 1
@@ -69,7 +88,7 @@ class Panel(QDialog):
 
 
 class ActionLabel(QLabel):
-    def __init__(self, hotbox_count, panel):
+    def __init__(self, hotbox_count, panel, search_box):
         super(ActionLabel, self).__init__()
 
         # Setting the look of label
@@ -81,6 +100,7 @@ class ActionLabel(QLabel):
         # Bring in global variable as needed
         self.hotbox_count = hotbox_count
         self.panel = panel
+        self.search_box = search_box
 
         # Setting variables for the selected node
         self.mc_read = nuke.selectedNode()
@@ -94,16 +114,7 @@ class ActionLabel(QLabel):
 
     def default_colour(self):
         # Setting default label scheme for rgb
-        self.setStyleSheet('background:grey;color:white')
-
-        if self.text() == "rgba.red":
-            self.setStyleSheet("background:red;color:white")
-
-        elif self.text() == "rgba.green":
-            self.setStyleSheet("background:green;color:white")
-
-        elif self.text() == "rgba.blue":
-            self.setStyleSheet("background:blue;color:white")
+        set_default_colour(self, self.search_box)
 
     def enterEvent(self, event):
         # Setting colour of label when selected
@@ -119,6 +130,10 @@ class ActionLabel(QLabel):
         if modifiers == Qt.ShiftModifier:
             shuffle_node = nuke.nodes.Shuffle(label=self.hotbox_name, inputs=[self.mc_read])
             shuffle_node['in'].setValue(self.hotbox_name)
+
+        elif modifiers == Qt.ControlModifier:
+            grade_node = nuke.nodes.Grade(label=self.hotbox_name, inputs=[self.mc_read])
+            grade_node['channels'].setValue(self.hotbox_name)
 
         else:
             try:
@@ -171,22 +186,13 @@ class SearchBox(QLineEdit):
 
     def change_colour(self, name, selected_label):
         if self.text() in name and 'search_box' not in name:
-            selected_label.setStyleSheet('background:grey;color:white')
-
-            if selected_label.text() == "rgba.red":
-                selected_label.setStyleSheet("background:red;color:white")
-
-            elif selected_label.text() == "rgba.green":
-                selected_label.setStyleSheet("background:green;color:white")
-
-            elif selected_label.text() == "rgba.blue":
-                selected_label.setStyleSheet("background:blue;color:white")
+            set_default_colour(selected_label, self)
 
         elif 'search_box' in name:
             selected_label.setStyleSheet('')
 
         else:
-            selected_label.setStyleSheet('background:transparent')
+            selected_label.setStyleSheet('background:transparent;color:gray')
 
 
 def load_hotbox():
@@ -195,7 +201,7 @@ def load_hotbox():
         # Global variables at start
         hotbox_count = 0
         col_count = 0
-        row_count = 0
+        row_count = 1
 
         panel = Panel(hotbox_count, col_count, row_count)
         panel.exec_()
