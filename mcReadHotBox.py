@@ -1,6 +1,6 @@
 # Created by: Mei Chu
-# Last updated: September 17, 2018
-# Version: 0.1.1
+# Last updated: September 19, 2018
+# Version: 0.1.2
 
 import nuke
 
@@ -16,16 +16,7 @@ except Exception:
 
 def set_default_colour(hotbox, search_box):
     if search_box.text() in hotbox.text():
-        hotbox.setStyleSheet('background:rgb(70, 70, 70);color:white')
-
-        if hotbox.text() == "rgba.red":
-            hotbox.setStyleSheet("background:red;color:white")
-
-        elif hotbox.text() == "rgba.green":
-            hotbox.setStyleSheet("background:green;color:white")
-
-        elif hotbox.text() == "rgba.blue":
-            hotbox.setStyleSheet("background:blue;color:white")
+        hotbox.setStyleSheet('background:rgb(60, 60, 60);color:white')
 
     else:
         hotbox.setStyleSheet('background:transparent;color:gray')
@@ -48,7 +39,7 @@ class Panel(QDialog):
         self.mouse_position = QCursor.pos()
         self.move(self.mouse_position)
 
-        # Adding searchbox at the start
+        # Adding search box at the start
         self.search_box = SearchBox(self)
         self.layout.addWidget(self.search_box, 0, 0)
 
@@ -58,28 +49,33 @@ class Panel(QDialog):
         self.row_count = row_count
 
         # Setting variable for the selected node
-        mc_read = nuke.selectedNode()
+        self.mc_read = nuke.selectedNode()
 
         # Determining the amount of channels available at selected node
-        mc_read_length = len(mc_read.channels())
+        self.read_data = []
+        for channel in self.mc_read.channels():
+            main_channel = channel.split('.')[0]
+            if main_channel not in self.read_data:
+                self.read_data.append(main_channel)
+
+        self.mc_read_length = len(self.read_data)
 
         # Counting the channels and adding it as a label widget
-        while self.hotbox_count < mc_read_length:
-            read_data = mc_read.channels()
-            hotbox_name = read_data[self.hotbox_count]
+        while self.hotbox_count < self.mc_read_length:
+            self.hotbox_name = self.read_data[self.hotbox_count]
 
             rgba_list = ['rgba.red', 'rgba.green', 'rgba.blue', 'rgba.alpha']
 
-            if hotbox_name in rgba_list:
-                self.layout.addWidget(ActionLabel(self.hotbox_count, self, self.search_box), self.row_count, 0)
+            if self.hotbox_name in rgba_list:
+                self.layout.addWidget(ActionLabel(self.hotbox_name, self, self.search_box), self.row_count, 0)
 
             else:
-                # Every time 6 hot boxes appear, move to the next column
+                # Every time 10 hot boxes appear, move to the next column
                 if (self.hotbox_count + 1) % 10 == 0:
                     self.col_count += 1
                     self.row_count = 0
 
-                self.layout.addWidget(ActionLabel(self.hotbox_count, self, self.search_box), self.row_count, self.col_count)
+                self.layout.addWidget(ActionLabel(self.hotbox_name, self, self.search_box), self.row_count, self.col_count)
 
             self.hotbox_count += 1
             self.row_count += 1
@@ -88,7 +84,7 @@ class Panel(QDialog):
 
 
 class ActionLabel(QLabel):
-    def __init__(self, hotbox_count, panel, search_box):
+    def __init__(self, hotbox_name, panel, search_box):
         super(ActionLabel, self).__init__()
 
         # Setting the look of label
@@ -98,14 +94,12 @@ class ActionLabel(QLabel):
         self.setFixedHeight(30)
 
         # Bring in global variable as needed
-        self.hotbox_count = hotbox_count
+        self.hotbox_name = hotbox_name
         self.panel = panel
         self.search_box = search_box
 
         # Setting variables for the selected node
         self.mc_read = nuke.selectedNode()
-        self.read_data = self.mc_read.channels()
-        self.hotbox_name = self.read_data[self.hotbox_count]
 
         # Setting text to the label
         self.setText(self.hotbox_name)
