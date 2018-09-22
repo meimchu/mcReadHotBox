@@ -1,10 +1,9 @@
 # Created by: Mei Chu
-# Last updated: September 20, 2018
-# Version: 0.1.3
+# Last updated: September 21, 2018
+# Version: 0.1.4
 
 import nuke
-import subprocess
-import re
+import sys
 
 try:
     from PySide.QtGui import *
@@ -22,15 +21,16 @@ fixed_height = 30
 
 def set_default_colour(hotbox, search_box):
     if search_box.text() in hotbox.text():
-        hotbox.setStyleSheet('background:rgb(60, 60, 60);color:white')
+        hotbox.setStyleSheet('background:rgb(55, 55, 55);color:white')
 
     else:
         hotbox.setStyleSheet('background:transparent;color:gray')
 
 
 class Panel(QDialog):
-    def __init__(self, hotbox_count, col_count, row_count):
-        super(Panel, self).__init__()
+    def __init__(self, hotbox_count, col_count, row_count, parent=None):
+        super(Panel, self).__init__(parent)
+        # self.installEventFilter(self)
 
         # Bring in global variables as needed
         self.hotbox_count = hotbox_count
@@ -41,8 +41,8 @@ class Panel(QDialog):
         self.setObjectName('widget_panel')
         self.layout = QGridLayout()
         self.layout.setVerticalSpacing(5)
-        self.setWindowFlags(Qt.Popup)
-        # self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Window)
+        self.setFocusPolicy(Qt.StrongFocus)
         # self.setAttribute(Qt.WA_TranslucentBackground)
 
         # Add search box at the start
@@ -100,9 +100,27 @@ class Panel(QDialog):
         # self.move(self.cursor_position - QPoint(5, 5))
 
     def get_resolution(self):
-        results = str(subprocess.Popen(['system_profiler SPDisplaysDataType'], stdout=subprocess.PIPE, shell=True).communicate()[0])
-        res = re.search('Resolution: \d* x \d*', results).group(0).split(' ')
-        width, height = int(res[1]) / 2, int(res[3]) / 2
+        from platform import system
+
+        try:
+            if system() == 'Darwin':
+                import subprocess
+                import re
+
+                results = str(subprocess.Popen(['system_profiler SPDisplaysDataType'], stdout=subprocess.PIPE, shell=True).communicate()[0])
+                res = re.search('Resolution: \d* x \d*', results).group(0).split(' ')
+                width, height = int(res[1]) / 2, int(res[3]) / 2
+
+            else:
+                import ctypes
+
+                user32 = ctypes.windll.user32
+                width = int(user32.GetSystemMetrics(0))
+                height = int(user32.GetSystemMetrics(1))
+
+        except Exception:
+            width = 0
+            height = 0
 
         return tuple([width, height])
 
@@ -122,19 +140,28 @@ class Panel(QDialog):
 
         # Move panel if cursor's Y position plus panel size goes off the edge
         if (y_cursor + y_panel_size) > y_monitor:
-            y_pos = y_cursor - y_panel_size
+            y_pos = y_cursor - y_panel_size - 40
 
         else:
             y_pos = y_cursor
 
         # Move panel if cursor's X position plus panel size goes off the edge
         if (x_cursor + x_panel_size) > x_monitor:
-            x_pos = x_cursor - x_panel_size
+            x_pos = x_cursor - x_panel_size - 40
 
         else:
             x_pos = x_cursor
 
         self.move(QPoint(x_pos, y_pos))
+
+    def changeEvent(self, event):
+        # print event.type()
+        if event.type() == QEvent.ActivationChange:
+            if self.isActiveWindow():
+                pass
+
+            else:
+                self.close()
 
 
 class ActionLabel(QLabel):
@@ -255,5 +282,5 @@ def load_hotbox():
         col_count = 0
         row_count = 1
 
-        panel = Panel(hotbox_count, col_count, row_count)
-        panel.exec_()
+        panel = Panel(hotbox_count, col_count, row_count, parent=QApplication.activeWindow())
+        panel.show()
