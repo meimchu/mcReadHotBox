@@ -1,9 +1,8 @@
 # Created by: Mei Chu
-# Last updated: September 21, 2018
-# Version: 0.1.4
+# Last updated: October 23, 2018
+# Version: 0.1.5
 
 import nuke
-import sys
 
 try:
     from PySide.QtGui import *
@@ -17,6 +16,11 @@ except Exception:
 # Global variable for the size of the labels and search box inside the panel
 fixed_width = 150
 fixed_height = 30
+
+# Global control variables for the panel
+row_per_col = 10
+x_offset = 40
+y_offset = 40
 
 
 def set_default_colour(hotbox, search_box):
@@ -73,7 +77,7 @@ class Panel(QDialog):
 
             else:
                 # Every time 10 hot boxes appear, move to the next column
-                if (self.hotbox_count + 1) % 10 == 0:
+                if (self.hotbox_count + 1) % row_per_col == 0:
                     self.col_count += 1
                     self.row_count = 0
 
@@ -97,30 +101,11 @@ class Panel(QDialog):
         x_pos = QCursor.pos().x()
         y_pos = QCursor.pos().y()
         return tuple([x_pos, y_pos])
-        # self.move(self.cursor_position - QPoint(5, 5))
 
     def get_resolution(self):
-        from platform import system
-
-        try:
-            if system() == 'Darwin':
-                import subprocess
-                import re
-
-                results = str(subprocess.Popen(['system_profiler SPDisplaysDataType'], stdout=subprocess.PIPE, shell=True).communicate()[0])
-                res = re.search('Resolution: \d* x \d*', results).group(0).split(' ')
-                width, height = int(res[1]) / 2, int(res[3]) / 2
-
-            else:
-                import ctypes
-
-                user32 = ctypes.windll.user32
-                width = int(user32.GetSystemMetrics(0))
-                height = int(user32.GetSystemMetrics(1))
-
-        except Exception:
-            width = 0
-            height = 0
+        rect = QCoreApplication.instance().desktop().availableGeometry(QCursor.pos())
+        width = rect.width()
+        height = rect.height()
 
         return tuple([width, height])
 
@@ -130,24 +115,19 @@ class Panel(QDialog):
         x_monitor = self.monitor_res[0]
         y_monitor = self.monitor_res[1]
 
-        if self.col_count == 0:
-            y_panel_size = int(self.row_count * fixed_height)
-
-        else:
-            y_panel_size = int(10 * fixed_height)
-
+        y_panel_size = int(self.row_count * fixed_height)
         x_panel_size = (self.col_count + 1) * fixed_width
 
         # Move panel if cursor's Y position plus panel size goes off the edge
         if (y_cursor + y_panel_size) > y_monitor:
-            y_pos = y_cursor - y_panel_size - 40
+            y_pos = y_cursor - y_panel_size - y_offset
 
         else:
             y_pos = y_cursor
 
         # Move panel if cursor's X position plus panel size goes off the edge
         if (x_cursor + x_panel_size) > x_monitor:
-            x_pos = x_cursor - x_panel_size - 40
+            x_pos = x_cursor - x_panel_size - x_offset
 
         else:
             x_pos = x_cursor
